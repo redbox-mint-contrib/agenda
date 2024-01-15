@@ -16,6 +16,7 @@ import type { IDatabaseOptions, IDbConfig, IMongoOptions } from './types/DbOptio
 import type { IJobParameters } from './types/JobParameters';
 import { hasMongoProtocol } from './utils/hasMongoProtocol';
 
+
 const log = debug('agenda:db');
 
 /**
@@ -108,11 +109,12 @@ export class JobDbRepository {
 		const update: UpdateFilter<IJobParameters> = { $set: { lockedAt: new Date() } };
 		const options: FindOneAndUpdateOptions = {
 			returnDocument: 'after',
-			sort: this.connectOptions.sort
+			sort: this.connectOptions.sort,
+			includeResultMetadata: true
 		};
 
 		// Lock the job in MongoDB!
-		const resp = await this.collection.findOneAndUpdate(
+		const resp:any = await this.collection.findOneAndUpdate(
 			criteria as Filter<IJobParameters>,
 			update,
 			options
@@ -155,11 +157,12 @@ export class JobDbRepository {
 		 */
 		const JOB_RETURN_QUERY: FindOneAndUpdateOptions = {
 			returnDocument: 'after',
-			sort: this.connectOptions.sort
+			sort: this.connectOptions.sort,
+			includeResultMetadata: true
 		};
 
 		// Find ONE and ONLY ONE job and set the 'lockedAt' time so that job begins to be processed
-		const result = await this.collection.findOneAndUpdate(
+		const result:any = await this.collection.findOneAndUpdate(
 			JOB_PROCESS_WHERE_QUERY,
 			JOB_PROCESS_SET_QUERY,
 			JOB_RETURN_QUERY
@@ -313,7 +316,8 @@ export class JobDbRepository {
 				const result = await this.collection.findOneAndUpdate(
 					{ _id: id, name: props.name },
 					update,
-					{ returnDocument: 'after' }
+					{ returnDocument: 'after',
+					includeResultMetadata: true }
 				);
 				return this.processDbResult(job, result.value as IJobParameters<DATA>);
 			}
@@ -344,7 +348,7 @@ export class JobDbRepository {
 					})
 				);
 				// this call ensure a job of this name can only exists once
-				const result = await this.collection.findOneAndUpdate(
+				const result:any = await this.collection.findOneAndUpdate(
 					{
 						name: props.name,
 						type: 'single'
@@ -352,7 +356,8 @@ export class JobDbRepository {
 					update,
 					{
 						upsert: true,
-						returnDocument: 'after'
+						returnDocument: 'after',
+						includeResultMetadata: true
 					}
 				);
 				log(
@@ -375,9 +380,10 @@ export class JobDbRepository {
 
 				// Use the 'unique' query object to find an existing job or create a new one
 				log('calling findOneAndUpdate() with unique object as query: \n%O', query);
-				const result = await this.collection.findOneAndUpdate(query as IJobParameters, update, {
+				const result:any = await this.collection.findOneAndUpdate(query as IJobParameters, update, {
 					upsert: true,
-					returnDocument: 'after'
+					returnDocument: 'after',
+					includeResultMetadata: true
 				});
 				return this.processDbResult(job, result.value as IJobParameters<DATA>);
 			}
